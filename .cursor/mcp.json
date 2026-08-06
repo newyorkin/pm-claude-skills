@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pm-claude-skills": {
+      "command": "node",
+      "args": ["mcp/server.mjs"]
+    }
+  }
+}
