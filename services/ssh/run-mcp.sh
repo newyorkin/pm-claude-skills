@@ -16,4 +16,17 @@ if ! python3 -c 'import fastmcp' 2>/dev/null; then
 fi
 export PATH="${HOME:-/home/ubuntu}/.local/bin:${PATH}"
 
+# Strip quotes/whitespace from flags (Secrets UI / .env paste often stores "true").
+strip_env_quotes() {
+  local name="$1"
+  local val="${!name-}"
+  if [ -n "${val}" ]; then
+    val="${val#\"}"; val="${val%\"}"
+    val="${val#\'}"; val="${val%\'}"
+    export "$name=$val"
+  fi
+}
+strip_env_quotes SSH_ENABLE_ARBITRARY_COMMANDS
+strip_env_quotes SSH_ALLOW_SUDO
+
 exec "$ROOT/services/ssh/entrypoint.sh" python3 "$ROOT/services/ssh/server.py"
