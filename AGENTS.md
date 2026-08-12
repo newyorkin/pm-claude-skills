@@ -25,6 +25,11 @@ This repo (`pm-claude-skills`) is a **Node.js content-library monorepo**, not a 
 `node tests/web-smoke.mjs` loads all ~36 interactive pages headlessly and self-serves on `:8123`. It needs Playwright + Chromium installed out-of-tree first:
 `npm i --no-save playwright && npx playwright install chromium`.
 
+### SSH admin MCP (`services/ssh`)
+FastMCP stdio server for Vienna (`vie`/`вена`) and Finland (`fin`/`финка`). Drive it with `python3 services/ssh/server.py` after materializing secrets via `services/ssh/entrypoint.sh` (or `docker build -t mcp-ssh services/ssh` + `dockerd --storage-driver=vfs`).
+
+Required secrets: `mcp_key`, `SSH_KNOWN_HOSTS`, `VIE_SSH_HOST`/`VIE_SSH_USER`/`VIE_SSH_PORT`, `FIN_SSH_HOST`/`FIN_SSH_USER`/`FIN_SSH_PORT`. Optional: `SSH_ENABLE_ARBITRARY_COMMANDS`, `SSH_ALLOW_SUDO` (both default off; needed for `run_command` / `kubectl` on k3s).
+
 ### Gotchas
 - Broken symlink at `templates/pm-launch-agent/skills/launch-checklist/SKILL.md` can cause glob errors when traversing the whole tree; the build/validate scripts handle it, but ad-hoc `find`/glob may complain.
 - Pre-commit hooks (`.pre-commit-config.yaml`) run `skillspec` on changed `SKILL.md` files and `skillcheck` on the `skills/` tree.

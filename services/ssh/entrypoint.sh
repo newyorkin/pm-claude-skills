@@ -5,8 +5,18 @@
 # Existing *_SSH_KEY_FILE / SSH_KNOWN_HOSTS_FILE (e.g. mounted files) take precedence.
 set -eu
 
-SSH_DIR="${SSH_DIR:-/root/.ssh}"
-mkdir -p "$SSH_DIR"
+# Cloud agent VMs run as non-root (e.g. ubuntu); /root/.ssh is not writable there.
+# Prefer explicit SSH_DIR, then ~/.ssh, then a tmp fallback.
+if [ -z "${SSH_DIR:-}" ]; then
+    if [ -n "${HOME:-}" ] && mkdir -p "${HOME}/.ssh" 2>/dev/null; then
+        SSH_DIR="${HOME}/.ssh"
+    else
+        SSH_DIR="${TMPDIR:-/tmp}/mcp-ssh"
+        mkdir -p "$SSH_DIR"
+    fi
+else
+    mkdir -p "$SSH_DIR"
+fi
 chmod 700 "$SSH_DIR"
 
 # --- Private key (one key for both hosts) ---

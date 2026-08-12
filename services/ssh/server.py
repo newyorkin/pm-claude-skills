@@ -60,6 +60,15 @@ def _normalize_host(host: str) -> str:
     return alias
 
 
+def _env_flag(name: str, default: str = "false") -> bool:
+    """Truthy env flag; strips whitespace/quotes (Cloud Secrets / .env paste quirks)."""
+    raw = os.getenv(name, default)
+    if raw is None:
+        return False
+    normalized = raw.strip().strip("\"'").lower()
+    return normalized in {"1", "true", "yes", "on"}
+
+
 def _config(host: str) -> SshConfig:
     alias = _normalize_host(host)
     prefix = alias.upper()
@@ -137,6 +146,14 @@ def list_hosts() -> str:
             lines.append(f"{labels[alias]}\t{user}@{host}:{port}")
         else:
             lines.append(f"{labels[alias]}\t(not configured)")
+    # Surface gate flags so Automations can see why run_command is blocked.
+    lines.append(
+        "run_command\t"
+        + ("enabled" if _env_flag("SSH_ENABLE_ARBITRARY_COMMANDS") else "disabled")
+    )
+    lines.append(
+        "sudo\t" + ("enabled" if _env_flag("SSH_ALLOW_SUDO") else "disabled")
+    )
     return "\n".join(lines)
 
 
@@ -166,16 +183,16 @@ def docker_logs(host: str, container: str, tail: int = 200) -> str:
 @mcp.tool()
 def run_command(host: str, command: str, timeout_seconds: int = 60) -> str:
     """Run a remote shell command when enabled in .env. host: vie/вена or fin/финка."""
-    if os.getenv("SSH_ENABLE_ARBITRARY_COMMANDS", "false").lower() != "true":
+    if not _env_flag("SSH_ENABLE_ARBITRARY_COMMANDS"):
         raise PermissionError(
             "Arbitrary commands are disabled. Set SSH_ENABLE_ARBITRARY_COMMANDS=true "
-            "in .env only after reviewing the security implications."
+            "in MCP env / Cloud Secrets only after reviewing the security implications."
         )
     if not command.strip() or len(command) > 4_000:
         raise ValueError("command must be between 1 and 4000 characters")
     if any(pattern.search(command) for pattern in BLOCKED_COMMANDS):
         raise PermissionError("Command matches a blocked destructive-operation policy")
-    if os.getenv("SSH_ALLOW_SUDO", "false").lower() != "true" and re.search(
+    if not _env_flag("SSH_ALLOW_SUDO") and re.search(
         r"(^|[;&|]\s*)sudo\b", command
     ):
         raise PermissionError("sudo commands are disabled; set SSH_ALLOW_SUDO=true to permit them")

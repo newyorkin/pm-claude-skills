@@ -3,6 +3,10 @@
     "pm-claude-skills": {
       "command": "node",
       "args": ["mcp/server.mjs"]
+    },
+    "ssh": {
+      "command": "bash",
+      "args": ["services/ssh/run-mcp.sh"]
     }
   }
 }

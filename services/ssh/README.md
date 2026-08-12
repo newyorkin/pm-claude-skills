@@ -68,10 +68,24 @@ MCP client config (`mcpServers`) — the client launches the container per sessi
 The `-e VAR` (no value) forwards the variable from the client's environment, so
 secret **values** stay out of this config.
 
-## Cursor Cloud Agent notes
+## Cursor Cloud Agent / Automations notes
 
 - Add the secrets in the **Secrets** panel; they are injected on a **fresh run**
   (a follow-up in an existing conversation keeps the same VM and won't see new secrets).
+- Cloud Agents and Automations do **not** read `.cursor/mcp.json`. Register the stdio
+  server in [Integrations & MCP](https://cursor.com/dashboard/integrations) / the
+  Automation **Add tool → MCP**, then enable it on that Automation:
+  - **Name:** `ssh`
+  - **Command:** `bash`
+  - **Args:** `services/ssh/run-mcp.sh`
+  - **Env:** put at least the non-secret gates here (Automations often do **not**
+    forward every Cloud Secret into the MCP child process):
+    `SSH_ENABLE_ARBITRARY_COMMANDS=true`, `SSH_ALLOW_SUDO=true`.
+    SSH material (`mcp_key`, `SSH_KNOWN_HOSTS`, `VIE_*`, `FIN_*`) can stay in
+    Cloud Secrets if inherited; if `list_hosts` shows `run_command disabled`,
+    add the two flags to this MCP Env block explicitly.
+- `run-mcp.sh` materializes key/known_hosts via `entrypoint.sh`, installs `fastmcp` if
+  missing, and uses a writable `SSH_DIR` under `$HOME` (not `/root`) for non-root VMs.
 - Inside the micro-VM, Docker needs the `vfs` storage driver — start the daemon with
   `dockerd --storage-driver=vfs` (default `overlayfs` fails to mount there).
 - The target hosts must be reachable from the cloud VM (public IP/domain).
